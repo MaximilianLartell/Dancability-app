@@ -1,14 +1,15 @@
-let express = require('express');
-let request = require('request');
-let querystring = require('querystring');
+const express = require('express');
+const request = require('request');
+const querystring = require('querystring');
 const cookieParser = require('cookie-parser');
 const fetch = require('node-fetch');
 
-let app = express();
+const app = express();
 
-let redirect_uri = 'http://localhost:8888/callback';
-const client_id = process.env.SPOTIFY_CLIENT_ID;
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+const redirectUri = 'http://localhost:8888/callback';
+const clientId = process.env.SPOTIFY_CLIENT_ID;
+const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+console.log(clientId);
 
 app.use(cookieParser());
 app.use((req, res, next) => {
@@ -19,15 +20,14 @@ app.use((req, res, next) => {
 });
 
 app.get('/login', (req, res) => {
-  res.redirect(
-    'https://accounts.spotify.com/authorize?' +
-      querystring.stringify({
-        response_type: 'code',
-        client_id: client_id,
-        scope: 'user-read-private user-read-email',
-        redirect_uri,
-      }),
-  );
+  const qs = querystring.stringify({
+    response_type: 'code',
+    client_id: clientId,
+    scope: 'user-read-private user-read-email',
+    redirect_uri: redirectUri,
+  });
+  console.log(qs);
+  res.redirect(`https://accounts.spotify.com/authorize?${qs}`);
 });
 
 // app.get("/fallback", (req, res) => {
@@ -51,45 +51,51 @@ app.get('/login', (req, res) => {
 // });
 
 app.get('/callback', (req, res) => {
-  let code = req.query.code || null;
-  let authOptions = {
+  const code = req.query.code || null;
+  const authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     form: {
-      code: code,
-      redirect_uri,
+      code,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     },
     headers: {
-      Authorization: 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+      Authorization: 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
     },
     json: true,
   };
   request.post(authOptions, (error, response, body) => {
-    let access_token = body.access_token;
-    let uri = process.env.FRONTEND_URI || 'http://localhost:3000';
-    res.cookie('access_token', access_token);
+    const accessToken = body.access_token;
+    const uri = process.env.FRONTEND_URI || 'http://localhost:3000';
+    res.cookie('accessToken', accessToken);
     res.redirect(uri);
   });
 });
 
 app.get('/api/user', (req, res) => {
-  console.log('hellooooo');
-  console.log('Cookie', req.cookies.access_token);
   fetch('https://api.spotify.com/v1/me', {
-    headers: { Authorization: 'Bearer ' + req.cookies.access_token },
+    headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
   })
     .then(response => response.json())
     .then(data => {
-        const userObject = { name: data.display_name, id: data.id, img_url: data.images[0].url };
-        console.log('user', userObject);
-        res.json(userObject)
+      const userObject = { name: data.display_name, id: data.id, img_url: data.images[0].url };
+      console.log('user', userObject);
+      res.json(userObject);
     });
 });
 
-app.get('api/playlists', (req, res) => {
-  console.log(req);
+app.get('/api/playlists', (req, res) => {
+  console.log('IÄM HERE');
+  fetch('https://api.spotify.com/v1/me/playlists', {
+    headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      const playlists = data.items.map((li) => ({ name: li.name, id: li.id }));
+      res.json(playlists);
+    });
 });
 
-let port = process.env.PORT || 8888;
+const port = process.env.PORT || 8888;
 console.log(`Listening on port ${port}. Go /login to initiate authentication flow.`);
 app.listen(port);

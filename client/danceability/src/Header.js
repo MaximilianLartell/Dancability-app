@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useCookies } from 'react-cookie';
 
 const Header = () => {
-  const [cookies, setCookie] = useCookies(['access_token']);
-  console.log(cookies.access_token);
+  const [cookies] = useCookies(['accessToken']);
   const [user, setUser] = useState({ name: null, id: null, img_url: null });
   useEffect(() => {
     // Update the document title using the browser API
     fetch('http://localhost:8888/api/user', {
-      headers: { Cookie: document.cookie.access_token },
+      headers: { Cookie: cookies.accessToken },
       credentials: 'include',
     })
       .then(res => res.json())
