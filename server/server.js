@@ -1,8 +1,9 @@
 const express = require('express');
-const request = require('request');
 const querystring = require('querystring');
 const cookieParser = require('cookie-parser');
 const fetch = require('node-fetch');
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
 const app = express();
 
@@ -11,6 +12,11 @@ const clientId = process.env.SPOTIFY_CLIENT_ID;
 const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 const spotifyBase = 'https://api.spotify.com/v1';
 
+const fetchData = async (url, req) =>
+  fetch(url, { headers: { Authorization: `Bearer ${req.cookies.accessToken}` } }).then(response =>
+    response.json(),
+  );
+
 app.use(cookieParser());
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -18,11 +24,6 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
-
-const fetchData = async (url, req) =>
-  fetch(url, { headers: { Authorization: `Bearer ${req.cookies.accessToken}` } }).then(response =>
-    response.json(),
-  );
 
 app.get('/login', (req, res) => {
   const qs = querystring.stringify({
@@ -34,51 +35,30 @@ app.get('/login', (req, res) => {
   res.redirect(`https://accounts.spotify.com/authorize?${qs}`);
 });
 
-// app.get("/fallback", (req, res) => {
-//   let code = req.query.code || null;
-//   const options = {
-//     method: "POST",
-//     body: {
-//       code: code,
-//       redirect_uri,
-//       grant_type: "authorization_code",
-//     },
-//     headers: {
-//       Authorization:
-//         "Basic " +
-//         Buffer.from(client_id + ":" + client_secret).toString("base64"),
-//     },
-//   };
-//   fetch("https://accounts.spotify.com/api/token", options).then((response) =>
-//     response.json()
-//   );
-// });
+app.get('/callback', async (req, res) => {
+  let code = req.query.code || null;
+  const params = new URLSearchParams();
+  params.append('code', code);
+  params.append('redirect_uri', redirectUri);
+  params.append('grant_type', 'authorization_code');
+  const options = {
+    method: 'POST',
+    body: params,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+    },
+  };
+  const response = await fetch('https://accounts.spotify.com/api/token', options).then(response =>
+    response.json(),
+  );
+  const accessToken = response.access_token;
+  const uri = 'http://localhost:3000';
+  res.cookie('accessToken', accessToken);
+  res.redirect(uri);
+});
 
 //{ error: { status: 401, message: 'The access token expired' } } response when token has expired
-
-app.get('/callback', (req, res) => {
-  const code = req.query.code || null;
-  const authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      code,
-      redirect_uri: redirectUri,
-      grant_type: 'authorization_code',
-    },
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-    },
-    json: true,
-  };
-  request.post(authOptions, (error, response, body) => {
-    const accessToken = body.access_token;
-    const refreshToken = refresh_token;
-    console.log(body);
-    const uri = 'http://localhost:3000';
-    res.cookie('accessToken', accessToken);
-    res.redirect(uri);
-  });
-});
 
 app.get('/api/user', async (req, res) => {
   const data = await fetchData(`${spotifyBase}/me`, req);
@@ -108,10 +88,8 @@ app.get('/api/playlists/:id', async (req, res) => {
       artist: item.track.artists[0].name,
     };
   });
-  const audioFeatures = await fetchData(
-    `${spotifyBase}/audio-features/?ids=${trackIdUrl}`,
-    req,
-  );
+
+  const audioFeatures = await fetchData(`${spotifyBase}/audio-features/?ids=${trackIdUrl}`, req);
 
   const meanEnergy = Math.round(
     (audioFeatures.audio_features.map(item => item.energy).reduce((a, b) => a + b) /
@@ -128,8 +106,8 @@ app.get('/api/playlists/:id', async (req, res) => {
     const track = item;
     const itemFeatures = audioFeatures.audio_features.find(el => el.id === tracks[i].trackId);
     track.audioProperties = {
-      danceability: itemFeatures.danceability,
-      energy: itemFeatures.energy,
+      danceability: Math.round(itemFeatures.danceability * 100),
+      energy: Math.round(itemFeatures.energy * 100),
     };
     return track;
   });
@@ -140,7 +118,7 @@ app.get('/api/playlists/:id', async (req, res) => {
     playlistDanceability: meanDanceability,
   };
 
-  res.status(200)
+  res.status(200);
   res.json(returnObject);
 });
 
