@@ -9,6 +9,7 @@ const app = express();
 const redirectUri = 'http://localhost:8888/callback';
 const clientId = process.env.SPOTIFY_CLIENT_ID;
 const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+const spotifyBase = 'https://api.spotify.com/v1';
 
 app.use(cookieParser());
 app.use((req, res, next) => {
@@ -17,6 +18,11 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
+
+const fetchData = async (url, req) =>
+  fetch(url, { headers: { Authorization: `Bearer ${req.cookies.accessToken}` } }).then(response =>
+    response.json(),
+  );
 
 app.get('/login', (req, res) => {
   const qs = querystring.stringify({
@@ -48,6 +54,8 @@ app.get('/login', (req, res) => {
 //   );
 // });
 
+//{ error: { status: 401, message: 'The access token expired' } } response when token has expired
+
 app.get('/callback', (req, res) => {
   const code = req.query.code || null;
   const authOptions = {
@@ -58,32 +66,31 @@ app.get('/callback', (req, res) => {
       grant_type: 'authorization_code',
     },
     headers: {
-      Authorization: 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
     },
     json: true,
   };
   request.post(authOptions, (error, response, body) => {
     const accessToken = body.access_token;
-    const uri = process.env.FRONTEND_URI || 'http://localhost:3000';
+    const refreshToken = refresh_token;
+    console.log(body);
+    const uri = 'http://localhost:3000';
     res.cookie('accessToken', accessToken);
     res.redirect(uri);
   });
 });
 
 app.get('/api/user', async (req, res) => {
-  const data = await fetch('https://api.spotify.com/v1/me', {
-    headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
-  }).then(response => response.json());
-
+  const data = await fetchData(`${spotifyBase}/me`, req);
   const userObject = { name: data.display_name, id: data.id, img_url: data.images[0].url };
+  res.status(200);
   res.json(userObject);
 });
 
 app.get('/api/playlists', async (req, res) => {
-  const data = await fetch('https://api.spotify.com/v1/me/playlists', {
-    headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
-  }).then(response => response.json());
+  const data = await fetchData(`${spotifyBase}/me/playlists`, req);
   const playlists = data.items.map(li => ({ name: li.name, id: li.id }));
+  res.status(200);
   res.json(playlists);
 });
 
@@ -91,9 +98,7 @@ app.get('/api/playlists/:id', async (req, res) => {
   const playlistId = req.params.id;
   let trackIdUrl = '';
 
-  const data = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-    headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
-  }).then(response => response.json());
+  const data = await fetchData(`${spotifyBase}/playlists/${playlistId}/tracks`, req);
 
   let tracks = data.items.map(item => {
     trackIdUrl += `${item.track.id},`;
@@ -103,29 +108,30 @@ app.get('/api/playlists/:id', async (req, res) => {
       artist: item.track.artists[0].name,
     };
   });
-  const audioFeatures = await fetch(
-    `https://api.spotify.com/v1/audio-features/?ids=${trackIdUrl}`,
-    {
-      headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
-    },
-  )
-    .then(response => response.json())
-    .then(data => data.audio_features);
+  const audioFeatures = await fetchData(
+    `${spotifyBase}/audio-features/?ids=${trackIdUrl}`,
+    req,
+  );
+
   const meanEnergy = Math.round(
-    (audioFeatures.map(item => item.energy).reduce((a, b) => a + b) / audioFeatures.length) * 100,
+    (audioFeatures.audio_features.map(item => item.energy).reduce((a, b) => a + b) /
+      audioFeatures.audio_features.length) *
+      100,
   );
   const meanDanceability = Math.round(
-    (audioFeatures.map(item => item.danceability).reduce((a, b) => a + b) / audioFeatures.length) *
+    (audioFeatures.audio_features.map(item => item.danceability).reduce((a, b) => a + b) /
+      audioFeatures.audio_features.length) *
       100,
   );
 
   tracks = tracks.map((item, i) => {
-    const itemFeatures = audioFeatures.find(el => el.id === tracks[i].trackId);
-    item.audioProperties = {
+    const track = item;
+    const itemFeatures = audioFeatures.audio_features.find(el => el.id === tracks[i].trackId);
+    track.audioProperties = {
       danceability: itemFeatures.danceability,
       energy: itemFeatures.energy,
     };
-    return item;
+    return track;
   });
 
   const returnObject = {
@@ -134,6 +140,7 @@ app.get('/api/playlists/:id', async (req, res) => {
     playlistDanceability: meanDanceability,
   };
 
+  res.status(200)
   res.json(returnObject);
 });
 
