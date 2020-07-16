@@ -3,6 +3,7 @@ import Login from './Login';
 import Playlists from './Playlists';
 import Tracks from './Tracks';
 import PlaylistCard from './PlaylistCard';
+import './App.css';
 import React, { useState } from 'react';
 import { useCookies } from 'react-cookie';
 

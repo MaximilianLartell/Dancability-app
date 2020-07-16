@@ -5,9 +5,9 @@ const Tracks = ({ playlistName, playlistTracks }) => {
   if (playlistTracks !== undefined) {
     const trackList = playlistTracks.map(item => {
       return (
-        <div className="trackCard" key={item.trackId}>
-          <h5 className="trackName">{item.trackName}</h5>
-          <h5 className="artistName">{item.artist}</h5>
+        <div className="track-card" key={item.trackId}>
+          <h5 className="track-name">{item.trackName}</h5>
+          <h5 className="artist-name">{item.artist}</h5>
           <p className="track-danceability">Danceability: {item.audioProperties.danceability}</p>
           <p className="track-energy">Energy: {item.audioProperties.danceability}</p>
         </div>
@@ -15,15 +15,15 @@ const Tracks = ({ playlistName, playlistTracks }) => {
     });
     return (
       <div className="tracks">
-        <h1 className="track-list-title">Tracks for: {playlistName}</h1>
+        <h1 className="track-list-title">{playlistName}</h1>
         <div className="tracks-container">{trackList}</div>
       </div>
     );
   }
 
   return (
-    <div className="tracks-container">
-      <h1 className="track-list-title">Tracks for:</h1>
+    <div className="tracks">
+      <h1 className="track-list-title">Tracks</h1>
     </div>
   );
 };

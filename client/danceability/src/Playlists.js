@@ -15,13 +15,13 @@ const Playlists = (props) => {
   }, []);
 
   const plName =playlists.map(item => {
-    return <div className="playlist" onClick={props.fetchTracks} id={item.id} key={item.id}>{item.name}</div>
+    return <div className="playlist-name" onClick={props.fetchTracks} id={item.id} key={item.id}>{item.name}</div>
     })
 
   return (
-    <div>
-      <h1>Playlists</h1>
-      <div className="playlists__items">
+    <div className="playlists">
+      <h1 className="playlist-title">Playlists</h1>
+      <div className="playlists-container">
       {plName}
       </div>
     </div>

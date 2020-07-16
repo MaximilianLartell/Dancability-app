@@ -111,11 +111,13 @@ app.get('/api/playlists/:id', async (req, res) => {
   )
     .then(response => response.json())
     .then(data => data.audio_features);
-  const meanEnergy =
-    (audioFeatures.map(item => item.energy).reduce((a, b) => a + b) / audioFeatures.length) * 100;
-  const meanDanceability =
+  const meanEnergy = Math.round(
+    (audioFeatures.map(item => item.energy).reduce((a, b) => a + b) / audioFeatures.length) * 100,
+  );
+  const meanDanceability = Math.round(
     (audioFeatures.map(item => item.danceability).reduce((a, b) => a + b) / audioFeatures.length) *
-    100;
+      100,
+  );
 
   tracks = tracks.map((item, i) => {
     const itemFeatures = audioFeatures.find(el => el.id === tracks[i].trackId);
@@ -127,9 +129,9 @@ app.get('/api/playlists/:id', async (req, res) => {
   });
 
   const returnObject = {
-      tracks, 
-      playlistEnergy: meanEnergy,
-      playlistDanceability: meanDanceability,
+    tracks,
+    playlistEnergy: meanEnergy,
+    playlistDanceability: meanDanceability,
   };
 
   res.json(returnObject);
