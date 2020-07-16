@@ -15,7 +15,7 @@ const Playlists = (props) => {
   }, []);
 
   const plName =playlists.map(item => {
-    return <div className="playlist" onClick={props.selectPlaylist} id={item.id} key={item.id}>{item.name}</div>
+    return <div className="playlist" onClick={props.fetchTracks} id={item.id} key={item.id}>{item.name}</div>
     })
 
   return (

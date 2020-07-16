@@ -9,7 +9,6 @@ const app = express();
 const redirectUri = 'http://localhost:8888/callback';
 const clientId = process.env.SPOTIFY_CLIENT_ID;
 const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-console.log(clientId);
 
 app.use(cookieParser());
 app.use((req, res, next) => {
@@ -26,7 +25,6 @@ app.get('/login', (req, res) => {
     scope: 'user-read-private user-read-email',
     redirect_uri: redirectUri,
   });
-  console.log(qs);
   res.redirect(`https://accounts.spotify.com/authorize?${qs}`);
 });
 
@@ -72,28 +70,69 @@ app.get('/callback', (req, res) => {
   });
 });
 
-app.get('/api/user', (req, res) => {
-  fetch('https://api.spotify.com/v1/me', {
+app.get('/api/user', async (req, res) => {
+  const data = await fetch('https://api.spotify.com/v1/me', {
     headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
-  })
-    .then(response => response.json())
-    .then(data => {
-      const userObject = { name: data.display_name, id: data.id, img_url: data.images[0].url };
-      console.log('user', userObject);
-      res.json(userObject);
-    });
+  }).then(response => response.json());
+
+  const userObject = { name: data.display_name, id: data.id, img_url: data.images[0].url };
+  res.json(userObject);
 });
 
-app.get('/api/playlists', (req, res) => {
-  console.log('IÄM HERE');
-  fetch('https://api.spotify.com/v1/me/playlists', {
+app.get('/api/playlists', async (req, res) => {
+  const data = await fetch('https://api.spotify.com/v1/me/playlists', {
     headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const playlists = data.items.map((li) => ({ name: li.name, id: li.id }));
-      res.json(playlists);
-    });
+  }).then(response => response.json());
+  const playlists = data.items.map(li => ({ name: li.name, id: li.id }));
+  res.json(playlists);
+});
+
+app.get('/api/playlists/:id', async (req, res) => {
+  const playlistId = req.params.id;
+  let trackIdUrl = '';
+
+  const data = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+    headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
+  }).then(response => response.json());
+
+  let tracks = data.items.map(item => {
+    trackIdUrl += `${item.track.id},`;
+    return {
+      trackName: item.track.name,
+      trackId: item.track.id,
+      artist: item.track.artists[0].name,
+    };
+  });
+  const audioFeatures = await fetch(
+    `https://api.spotify.com/v1/audio-features/?ids=${trackIdUrl}`,
+    {
+      headers: { Authorization: 'Bearer ' + req.cookies.accessToken },
+    },
+  )
+    .then(response => response.json())
+    .then(data => data.audio_features);
+  const meanEnergy =
+    (audioFeatures.map(item => item.energy).reduce((a, b) => a + b) / audioFeatures.length) * 100;
+  const meanDanceability =
+    (audioFeatures.map(item => item.danceability).reduce((a, b) => a + b) / audioFeatures.length) *
+    100;
+
+  tracks = tracks.map((item, i) => {
+    const itemFeatures = audioFeatures.find(el => el.id === tracks[i].trackId);
+    item.audioProperties = {
+      danceability: itemFeatures.danceability,
+      energy: itemFeatures.energy,
+    };
+    return item;
+  });
+
+  const returnObject = {
+      tracks, 
+      playlistEnergy: meanEnergy,
+      playlistDanceability: meanDanceability,
+  };
+
+  res.json(returnObject);
 });
 
 const port = process.env.PORT || 8888;
