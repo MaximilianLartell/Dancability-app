@@ -15,7 +15,7 @@ const Header = () => {
 
   return (
     <header>
-      <h1 className="page-title">Partycompabilitychecker</h1>
+      <h1 className="page-title">Danceability</h1>
       <div className="user-info">  
         <h4 className="user-name">{user.name}</h4>
         <img className="user-img" src={user.img_url} alt="Girl in a jacket" width="50" height="50"/>

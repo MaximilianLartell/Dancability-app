@@ -5,8 +5,13 @@ const PlaylistCard = ({ name, danceability, energy }) => {
     return (
       <div className="playlist-card">
         <h1 className="playlist-card-title">{name}</h1>
-        <h3 className="playlist-danceability">Danceability: <br/> {danceability}%</h3>
-        <h3 className="playlist-energy">Energy: <br/>{energy}%</h3>
+        <h3 className="playlist-danceability">
+          Danceability: <br /> {danceability}%
+        </h3>
+        <h3 className="playlist-energy">
+          Energy: <br />
+          {energy}%
+        </h3>
       </div>
     );
   }

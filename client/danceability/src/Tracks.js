@@ -8,8 +8,8 @@ const Tracks = ({ playlistName, playlistTracks }) => {
         <div className="track-card" key={item.trackId}>
           <h5 className="track-name">{item.trackName}</h5>
           <h5 className="artist-name">{item.artist}</h5>
-          <p className="track-danceability">Danceability: {item.audioProperties.danceability}</p>
-          <p className="track-energy">Energy: {item.audioProperties.danceability}</p>
+          <p className="track-danceability">Danceability: {item.audioProperties.danceability}%</p>
+          <p className="track-energy">Energy: {item.audioProperties.danceability}%</p>
         </div>
       );
     });

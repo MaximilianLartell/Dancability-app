@@ -33,7 +33,7 @@ const App = () => {
 
   if (!cookies.accessToken) {
     return (
-      <div>
+      <div className="login-body">
         <Login />
       </div>
     );

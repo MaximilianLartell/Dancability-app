@@ -19,7 +19,6 @@
 html {
   font-family: 'Roboto', sans-serif;
   color: white;
-  background-color: rgb(212, 212, 212);
 }
 
 .body {
@@ -35,6 +34,7 @@ header {
   grid-area: 1 / 1 / 2 / 6;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
+  opacity: 1;
 }
 
 main {
@@ -42,6 +42,8 @@ main {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: repeat(7, 1fr);
+  background-color: black;
+  opacity: 0.95;
 }
 
 h1 {
@@ -58,13 +60,18 @@ h3 {
 
 h5 {
   font-size: 15px;
-  margin: 3px; 
+  margin: 3px;
 }
 
 p {
   font-size: 10px;
-  margin: 0px 5px; 
+  margin: 0px 5px;
 }
+
+a {
+  color: inherit;
+}
+
 .playlists {
   margin: 30px;
   background-color: rgb(19, 19, 19);
@@ -72,10 +79,8 @@ p {
   width: 200px;
   grid-area: 1 / 1 / 7 / 2;
   overflow-y: scroll;
-}
+  border-radius: 10px;
 
-.playlist-title {
-  z-index: -1;
 }
 
 .playlist-name {
@@ -87,6 +92,12 @@ p {
 
 .playlist-name:hover {
   opacity: 1;
+  font-size: 16px;
+}
+
+.playlist-name:active {
+  color: rgb(100, 211, 110);
+  font-size: 18px;
 }
 
 .tracks {
@@ -97,10 +108,11 @@ p {
   grid-area: 1 / 2 / 7 / 2;
   overflow-y: scroll;
   overflow-x: hidden;
+  border-radius: 10px;
 }
 
 .track-card {
-  margin: 10px 10px 0 10px; 
+  margin: 10px 10px 0 10px;
   opacity: 0.7;
 }
 
@@ -109,7 +121,9 @@ p {
   grid-area: 2 / 4 / 6 / 7;
   width: 400px;
   height: 400px;
+  padding: 70px 0;
   text-align: center;
+  border-radius: 10px;
 }
 
 .user-info {
@@ -119,5 +133,38 @@ p {
 }
 
 .user-name {
-  margin: auto 10px; 
+  margin: auto 10px;
+}
+
+.login-body {
+  padding: 100px;
+  text-align: center;
+}
+
+.login-card {
+  background-color: rgb(19, 19, 19);
+  justify-content: center;
+  width: 400px;
+  height: 400px;
+  margin: auto;
+  text-align: center;
+  padding: 70px 0;
+  border-radius: 20px;
+}
+
+.login-button {
+  font-size: 25px;
+  margin: 50px auto auto auto;
+  opacity: 0.7;
+  /* background-color: rgb(100, 211, 110) ; */
+}
+
+.login-button:hover {
+  opacity: 1;
+  font-size: 26px;
+}
+
+.login-button:active {
+  color: rgb(100, 211, 110);
+  font-size: 28px;
 }
