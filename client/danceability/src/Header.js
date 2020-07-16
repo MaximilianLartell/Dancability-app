@@ -1,0 +1,28 @@
+import React, { useState, useEffect } from 'react';
+import { useCookies } from 'react-cookie';
+
+const Header = () => {
+  const [cookies, setCookie] = useCookies(['access_token']);
+  console.log(cookies.access_token);
+  const [user, setUser] = useState({ name: null, id: null, img_url: null });
+  useEffect(() => {
+    // Update the document title using the browser API
+    fetch('http://localhost:8888/api/user', {
+      headers: { Cookie: document.cookie.access_token },
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => setUser(data));
+  }, []);
+
+  return (
+    <header>
+      <div className="user">  
+        <h4>{user.name}</h4>
+        <img src={user.img_url} alt="Girl in a jacket" width="50" height="50"/>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
