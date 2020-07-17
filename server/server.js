@@ -46,19 +46,23 @@ app.get('/callback', async (req, res) => {
     body: params,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+      Authorization: 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
     },
   };
   const response = await fetch('https://accounts.spotify.com/api/token', options).then(response =>
     response.json(),
   );
   const accessToken = response.access_token;
+  const refreshToken = response.refresh_token;
   const uri = 'http://localhost:3000';
   res.cookie('accessToken', accessToken);
   res.redirect(uri);
 });
 
 //{ error: { status: 401, message: 'The access token expired' } } response when token has expired
+// unhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by 
+//throwing inside of an async function without a catch block, or by rejecting a promise which was 
+//not handled with .catch(). (rejection id: 2)
 
 app.get('/api/user', async (req, res) => {
   const data = await fetchData(`${spotifyBase}/me`, req);
@@ -68,7 +72,7 @@ app.get('/api/user', async (req, res) => {
 });
 
 app.get('/api/playlists', async (req, res) => {
-  const data = await fetchData(`${spotifyBase}/me/playlists`, req);
+  const data = await fetchData(`${spotifyBase}/me/playlists?limit=50`, req);
   const playlists = data.items.map(li => ({ name: li.name, id: li.id }));
   res.status(200);
   res.json(playlists);
