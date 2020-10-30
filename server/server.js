@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
+require('dotenv').config();
 
 const app = express();
 
@@ -13,14 +14,17 @@ const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 const spotifyBase = 'https://api.spotify.com/v1';
 
 const fetchData = async (url, req) =>
-  fetch(url, { headers: { Authorization: `Bearer ${req.cookies.accessToken}` } }).then(response =>
-    response.json(),
-  );
+  fetch(url, {
+    headers: { Authorization: `Bearer ${req.cookies.accessToken}` },
+  }).then((response) => response.json());
 
 app.use(cookieParser());
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept'
+  );
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
@@ -46,12 +50,15 @@ app.get('/callback', async (req, res) => {
     body: params,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
+      Authorization:
+        'Basic ' +
+        Buffer.from(clientId + ':' + clientSecret).toString('base64'),
     },
   };
-  const response = await fetch('https://accounts.spotify.com/api/token', options).then(response =>
-    response.json(),
-  );
+  const response = await fetch(
+    'https://accounts.spotify.com/api/token',
+    options
+  ).then((response) => response.json());
   const accessToken = response.access_token;
   const refreshToken = response.refresh_token;
   const uri = 'http://localhost:3000';
@@ -60,20 +67,24 @@ app.get('/callback', async (req, res) => {
 });
 
 //{ error: { status: 401, message: 'The access token expired' } } response when token has expired
-// unhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by 
-//throwing inside of an async function without a catch block, or by rejecting a promise which was 
+// unhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by
+//throwing inside of an async function without a catch block, or by rejecting a promise which was
 //not handled with .catch(). (rejection id: 2)
 
 app.get('/api/user', async (req, res) => {
   const data = await fetchData(`${spotifyBase}/me`, req);
-  const userObject = { name: data.display_name, id: data.id, img_url: data.images[0].url };
+  const userObject = {
+    name: data.display_name,
+    id: data.id,
+    img_url: data.images[0].url,
+  };
   res.status(200);
   res.json(userObject);
 });
 
 app.get('/api/playlists', async (req, res) => {
   const data = await fetchData(`${spotifyBase}/me/playlists?limit=50`, req);
-  const playlists = data.items.map(li => ({ name: li.name, id: li.id }));
+  const playlists = data.items.map((li) => ({ name: li.name, id: li.id }));
   res.status(200);
   res.json(playlists);
 });
@@ -82,9 +93,12 @@ app.get('/api/playlists/:id', async (req, res) => {
   const playlistId = req.params.id;
   let trackIdUrl = '';
 
-  const data = await fetchData(`${spotifyBase}/playlists/${playlistId}/tracks`, req);
+  const data = await fetchData(
+    `${spotifyBase}/playlists/${playlistId}/tracks`,
+    req
+  );
 
-  let tracks = data.items.map(item => {
+  let tracks = data.items.map((item) => {
     trackIdUrl += `${item.track.id},`;
     return {
       trackName: item.track.name,
@@ -93,22 +107,31 @@ app.get('/api/playlists/:id', async (req, res) => {
     };
   });
 
-  const audioFeatures = await fetchData(`${spotifyBase}/audio-features/?ids=${trackIdUrl}`, req);
+  const audioFeatures = await fetchData(
+    `${spotifyBase}/audio-features/?ids=${trackIdUrl}`,
+    req
+  );
 
   const meanEnergy = Math.round(
-    (audioFeatures.audio_features.map(item => item.energy).reduce((a, b) => a + b) /
+    (audioFeatures.audio_features
+      .map((item) => item.energy)
+      .reduce((a, b) => a + b) /
       audioFeatures.audio_features.length) *
-      100,
+      100
   );
   const meanDanceability = Math.round(
-    (audioFeatures.audio_features.map(item => item.danceability).reduce((a, b) => a + b) /
+    (audioFeatures.audio_features
+      .map((item) => item.danceability)
+      .reduce((a, b) => a + b) /
       audioFeatures.audio_features.length) *
-      100,
+      100
   );
 
   tracks = tracks.map((item, i) => {
     const track = item;
-    const itemFeatures = audioFeatures.audio_features.find(el => el.id === tracks[i].trackId);
+    const itemFeatures = audioFeatures.audio_features.find(
+      (el) => el.id === tracks[i].trackId
+    );
     track.audioProperties = {
       danceability: Math.round(itemFeatures.danceability * 100),
       energy: Math.round(itemFeatures.energy * 100),
@@ -127,5 +150,7 @@ app.get('/api/playlists/:id', async (req, res) => {
 });
 
 const port = process.env.PORT || 8888;
-console.log(`Listening on port ${port}. Go /login to initiate authentication flow.`);
+console.log(
+  `Listening on port ${port}. Go /login to initiate authentication flow.`
+);
 app.listen(port);
